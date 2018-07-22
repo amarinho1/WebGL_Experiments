@@ -9,91 +9,6 @@ function main() {
     return;
   }
 
-  var positions = [
-    // Front face
-    -1.0, -1.0,  1.0,
-     1.0, -1.0,  1.0,
-     1.0,  1.0,  1.0,
-    -1.0,  1.0,  1.0,
-    
-    // Back face
-    -1.0, -1.0, -1.0,
-    -1.0,  1.0, -1.0,
-     1.0,  1.0, -1.0,
-     1.0, -1.0, -1.0,
-    
-    // Top face
-    -1.0,  1.0, -1.0,
-    -1.0,  1.0,  1.0,
-     1.0,  1.0,  1.0,
-     1.0,  1.0, -1.0,
-    
-    // Bottom face
-    -1.0, -1.0, -1.0,
-     1.0, -1.0, -1.0,
-     1.0, -1.0,  1.0,
-    -1.0, -1.0,  1.0,
-    
-    // Right face
-     1.0, -1.0, -1.0,
-     1.0,  1.0, -1.0,
-     1.0,  1.0,  1.0,
-     1.0, -1.0,  1.0,
-    
-    // Left face
-    -1.0, -1.0, -1.0,
-    -1.0, -1.0,  1.0,
-    -1.0,  1.0,  1.0,
-    -1.0,  1.0, -1.0,
-  ];
-  
-  var indices = [
-    0,  1,  2,      0,  2,  3,    // front
-    4,  5,  6,      4,  6,  7,    // back
-    8,  9,  10,     8,  10, 11,   // top
-    12, 13, 14,     12, 14, 15,   // bottom
-    16, 17, 18,     16, 18, 19,   // right
-    20, 21, 22,     20, 22, 23,   // left
-  ];
-  
-  var normals = [
-    // Front
-     0.0,  0.0,  1.0,
-     0.0,  0.0,  1.0,
-     0.0,  0.0,  1.0,
-     0.0,  0.0,  1.0,
-  
-    // Back
-     0.0,  0.0, -1.0,
-     0.0,  0.0, -1.0,
-     0.0,  0.0, -1.0,
-     0.0,  0.0, -1.0,
-  
-    // Top
-     0.0,  1.0,  0.0,
-     0.0,  1.0,  0.0,
-     0.0,  1.0,  0.0,
-     0.0,  1.0,  0.0,
-  
-    // Bottom
-     0.0, -1.0,  0.0,
-     0.0, -1.0,  0.0,
-     0.0, -1.0,  0.0,
-     0.0, -1.0,  0.0,
-  
-    // Right
-     1.0,  0.0,  0.0,
-     1.0,  0.0,  0.0,
-     1.0,  0.0,  0.0,
-     1.0,  0.0,  0.0,
-  
-    // Left
-    -1.0,  0.0,  0.0,
-    -1.0,  0.0,  0.0,
-    -1.0,  0.0,  0.0,
-    -1.0,  0.0,  0.0
-  ];
-
   // setup GLSL program
   var program = webglUtils.createProgramFromScripts(gl, ["3d-vertex-shader", "3d-fragment-shader"]);
 
@@ -120,6 +35,47 @@ function main() {
   var indexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+  
+  /*================= Mouse events ======================*/
+  var THETA = 0,
+  PHI = 0;
+
+  var AMORTIZATION = 0.95;
+  var drag = false;
+  var old_x, old_y;
+  var dX = 0, dY = 0;
+  
+  /*
+  ######################
+  Mouse Events Functions
+  ######################
+  */
+  function mouseDown(e) {
+    drag = true;
+    old_x = e.pageX, old_y = e.pageY;
+    e.preventDefault();
+    return false;
+  };
+  
+  function mouseUp(e){
+    drag = false;
+  };
+  
+  function mouseMove(e) {
+    if (!drag) return false;
+    dX = (e.pageX-old_x)*2*Math.PI/canvas.width,
+    dY = (e.pageY-old_y)*2*Math.PI/canvas.height;
+    THETA+= dX;
+    PHI+=dY;
+    old_x = e.pageX, old_y = e.pageY;
+    e.preventDefault();
+  };
+    
+  canvas.addEventListener("mousedown", mouseDown, false);
+  canvas.addEventListener("mouseup", mouseUp, false);
+  canvas.addEventListener("mouseout", mouseUp, false);
+  canvas.addEventListener("mousemove", mouseMove, false);
+
 
   requestAnimationFrame(drawScene); // Draw the scene.
 
@@ -130,6 +86,12 @@ function main() {
   */
   function drawScene(time) {
     time = time * 0.0005;
+
+    if (!drag) {
+      dX *= AMORTIZATION, dY*=AMORTIZATION;
+      THETA+=dX, PHI+=dY;
+   }
+
   
     webglUtils.resizeCanvasToDisplaySize(gl.canvas); // Tell WebGL how to convert from clip space to pixels
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -156,25 +118,16 @@ function main() {
 
     // Compute the projection matrix
     var aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-    var zNear = 1;
-    var zFar = 2000;
-    var projectionMatrix = m4.perspective(degToRad(60), aspect, zNear, zFar);
+    var camera = new PerspectiveCamera();
+    camera.setPosition(10, 5, 10);
 
-    // Compute the camera's matrix
-    var camera = [10, 5, 10];
-    var target = [0, 0, 0];
-    var up = [0, 1, 0];
-    var cameraMatrix = m4.lookAt(camera, target, up);
+    var projectionMatrix = camera.computeProjectionMatrix(aspect);
+    var viewProjectionMatrix = camera.computeViewProjectionMatrix(projectionMatrix);
 
-    // Make a view matrix from the camera matrix.
-    var viewMatrix = m4.inverse(cameraMatrix);
-
-    // Compute a view projection matrix
-    var viewProjectionMatrix = m4.multiply(projectionMatrix, viewMatrix);
-
-    // Draw a F at the origin
-    var worldMatrix = m4.yRotation(time);
-    worldMatrix = m4.xRotate(worldMatrix, -time);
+    // Draw at the origin
+    var worldMatrix = m4.identity()
+    worldMatrix = m4.yRotate(worldMatrix, THETA);
+    worldMatrix = m4.xRotate(worldMatrix, PHI);
 
     // Multiply the matrices.
     var worldViewProjectionMatrix = m4.multiply(viewProjectionMatrix, worldMatrix);
@@ -189,7 +142,7 @@ function main() {
     gl.uniform4fv(colorLocation, [0.2, 1, 0.2, 1]); // green
 
     // set the light direction.
-    gl.uniform3fv(revlightLocation, m4.normalize([0.5, 0.7, 1]));
+    gl.uniform3fv(revlightLocation, m4.normalize([-0.5, 1, 2]));
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
@@ -202,15 +155,93 @@ function main() {
 
 /*
 ######################
-Helper Functions
+Cube Data
 ######################
 */
-function radToDeg(r) {
-  return r * 180 / Math.PI;
-}
+var positions = [
+  // Front face
+  -1.0, -1.0,  1.0,
+   1.0, -1.0,  1.0,
+   1.0,  1.0,  1.0,
+  -1.0,  1.0,  1.0,
+  
+  // Back face
+  -1.0, -1.0, -1.0,
+  -1.0,  1.0, -1.0,
+   1.0,  1.0, -1.0,
+   1.0, -1.0, -1.0,
+  
+  // Top face
+  -1.0,  1.0, -1.0,
+  -1.0,  1.0,  1.0,
+   1.0,  1.0,  1.0,
+   1.0,  1.0, -1.0,
+  
+  // Bottom face
+  -1.0, -1.0, -1.0,
+   1.0, -1.0, -1.0,
+   1.0, -1.0,  1.0,
+  -1.0, -1.0,  1.0,
+  
+  // Right face
+   1.0, -1.0, -1.0,
+   1.0,  1.0, -1.0,
+   1.0,  1.0,  1.0,
+   1.0, -1.0,  1.0,
+  
+  // Left face
+  -1.0, -1.0, -1.0,
+  -1.0, -1.0,  1.0,
+  -1.0,  1.0,  1.0,
+  -1.0,  1.0, -1.0,
+];
 
-function degToRad(d) {
-  return d * Math.PI / 180;
-}
+var indices = [
+  0,  1,  2,      0,  2,  3,    // front
+  4,  5,  6,      4,  6,  7,    // back
+  8,  9,  10,     8,  10, 11,   // top
+  12, 13, 14,     12, 14, 15,   // bottom
+  16, 17, 18,     16, 18, 19,   // right
+  20, 21, 22,     20, 22, 23,   // left
+];
+
+var normals = [
+  // Front
+   0.0,  0.0,  1.0,
+   0.0,  0.0,  1.0,
+   0.0,  0.0,  1.0,
+   0.0,  0.0,  1.0,
+
+  // Back
+   0.0,  0.0, -1.0,
+   0.0,  0.0, -1.0,
+   0.0,  0.0, -1.0,
+   0.0,  0.0, -1.0,
+
+  // Top
+   0.0,  1.0,  0.0,
+   0.0,  1.0,  0.0,
+   0.0,  1.0,  0.0,
+   0.0,  1.0,  0.0,
+
+  // Bottom
+   0.0, -1.0,  0.0,
+   0.0, -1.0,  0.0,
+   0.0, -1.0,  0.0,
+   0.0, -1.0,  0.0,
+
+  // Right
+   1.0,  0.0,  0.0,
+   1.0,  0.0,  0.0,
+   1.0,  0.0,  0.0,
+   1.0,  0.0,  0.0,
+
+  // Left
+  -1.0,  0.0,  0.0,
+  -1.0,  0.0,  0.0,
+  -1.0,  0.0,  0.0,
+  -1.0,  0.0,  0.0
+];
+
 
 main();

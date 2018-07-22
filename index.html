@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-<title>WebGL - Same Code - Canvas Fullscreen</title>
+<title>WebGL - Canvas Fullscreen</title>
 <style>
    body {
      margin: 0;
@@ -38,6 +38,7 @@
       v_normal = mat3(u_worldInverseTranspose) * a_normal;
     }
     </script>
+
     <!-- fragment shader -->
     <script id="3d-fragment-shader" type="x-shader/x-fragment">
     precision mediump float;
@@ -73,4 +74,7 @@
     <script src="https://webglfundamentals.org/webgl/resources/webgl-utils.js"></script>
     <script src="https://webglfundamentals.org/webgl/resources/m4.js"></script>
     <script src="https://webglfundamentals.org/webgl/resources/primitives.js"></script>
+    
     <script src="main.js"></script>
+    <script src="src/Entity.js"></script>
+    <script src="src/cameras/PerspectiveCamera.js"></script>

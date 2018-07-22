@@ -1,12 +1,9 @@
-class entity {
+class Entity {
 
     constructor() {
 		
 		this.x, this.y, this.z = 0;
 		this.direction = 0;
-		
-		if (new.target === entity)
-            throw new TypeError("Cannot construct Entity instances directly");
 		
     }
 
