@@ -90,8 +90,7 @@ function main() {
     if (!drag) {
       dX *= AMORTIZATION, dY*=AMORTIZATION;
       THETA+=dX, PHI+=dY;
-   }
-
+    }
   
     webglUtils.resizeCanvasToDisplaySize(gl.canvas); // Tell WebGL how to convert from clip space to pixels
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -126,8 +125,8 @@ function main() {
 
     // Draw at the origin
     var worldMatrix = m4.identity()
-    worldMatrix = m4.yRotate(worldMatrix, THETA);
-    worldMatrix = m4.xRotate(worldMatrix, PHI);
+    worldMatrix = m4.yRotate(worldMatrix, THETA + time);
+    worldMatrix = m4.xRotate(worldMatrix, PHI - time);
 
     // Multiply the matrices.
     var worldViewProjectionMatrix = m4.multiply(viewProjectionMatrix, worldMatrix);
