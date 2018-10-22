@@ -126,7 +126,7 @@ function main() {
     // Draw at the origin
     var worldMatrix = m4.identity()
     worldMatrix = m4.yRotate(worldMatrix, THETA + time);
-    worldMatrix = m4.xRotate(worldMatrix, PHI - time);
+    worldMatrix = m4.xRotate(worldMatrix, PHI + time);
 
     // Multiply the matrices.
     var worldViewProjectionMatrix = m4.multiply(viewProjectionMatrix, worldMatrix);
